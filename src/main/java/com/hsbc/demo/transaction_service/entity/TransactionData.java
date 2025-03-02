@@ -1,14 +1,14 @@
 package com.hsbc.demo.transaction_service.entity;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.sql.Timestamp;
 import java.util.Hashtable;
 
-import jakarta.annotation.Generated;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,19 +21,28 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@Table(name="transaction")
 public class TransactionData {
 
+    // 唯一标识Id
     @Id
     @GeneratedValue(strategy=GenerationType.UUID)
-    public String Id;
+    private String transactionId;
     
-    public String TradeId;
+    // 来源于交易发起方用于查找对应的交易&去重, 主要用于三方发起的购买
+    private String sourceTradeId;
 
-    public BigDecimal Amount;
+    private BigDecimal amount;
 
-    public String SourceAccountId;
+    private TransactionType type;
+    private TransactionStatus status;
+
+    private String sourceAccountId;
+    private String destAccountId;
+
+    private Timestamp createTime;
+    private Timestamp updateTime;
     
-    public String DestAccountId;
-
-    public Hashtable<String, String> AddionalData;
+    // 补充信息
+    private Hashtable<String, String> AddionalData;
 }
