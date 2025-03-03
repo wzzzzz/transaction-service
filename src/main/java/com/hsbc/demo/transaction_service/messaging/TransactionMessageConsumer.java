@@ -1,9 +1,20 @@
 package com.hsbc.demo.transaction_service.messaging;
 
+
+import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.HashSet;
+
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hsbc.demo.transaction_service.config.RabbitMQConfig;
-import com.hsbc.demo.transaction_service.dto.TransferMessage;
+import com.hsbc.demo.transaction_service.dto.*;
+import com.hsbc.demo.transaction_service.entity.*;
+import com.hsbc.demo.transaction_service.exception.*;
+import com.hsbc.demo.transaction_service.repository.*;
 
 @Service
 public class TransactionMessageConsumer {
@@ -11,15 +22,12 @@ public class TransactionMessageConsumer {
     private static final int MAX_RETRIES = 3;
 
     @Autowired
-    private RabbitMQConfig rabbitMQConfig;
-
-    @Autowired
     private TransactionRepository transactionRepository;
 
     @Autowired
     private AccountRepository accountRepository;
 
-    @RabbitListener(queues = rabbitMQConfig.TransferQueue())
+    @RabbitListener(queues = RabbitMQConfig.TRANSFER_QUQUE)
     public void receiveMessage(TransferMessage message) {
 
         System.out.println("Received message: " + message);
@@ -27,10 +35,10 @@ public class TransactionMessageConsumer {
         int retryCount = 0;
         while (retryCount < MAX_RETRIES) {
             try {
-                // 模拟业务逻辑失败
-                if (message.getContent().contains("error")) {
-                    throw new RuntimeException("Message processing failed!");
-                }
+                // // 模拟业务逻辑失败
+                // if (message.getContent().contains("error")) {
+                //     throw new RuntimeException("Message processing failed!");
+                // }
                 // 正常处理逻辑
                 System.out.println("Message processed successfully: " + message);
                 break; // 处理成功，退出循环

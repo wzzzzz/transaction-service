@@ -192,6 +192,10 @@
 
 ## 4. To Do List
 
+- **集成ExceptionHandler**
+
+  由于时间所限，需要集成ExceptionHandler，使请求处理出错时返回规范的Response
+
 - **部署上线之后对系统进行压测**
 
   对系统进行压测并记录数据，以便后续配置动态扩容。

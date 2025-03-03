@@ -1,9 +1,12 @@
 package com.hsbc.demo.transaction_service.controller;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.core.env.Environment;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -43,14 +46,14 @@ public class TransactionController {
     private Environment environment;
 
     @GetMapping("/transaction/list")
-    public List<TransactionDTO> findAllAccounts(@RequestParam(value = "PageNo", required = false, defaultValue = "1")Integer pageNumber, 
+    public ServiceResponse<List<TransactionDTO>> findAllAccounts(@RequestParam(value = "PageNo", required = false, defaultValue = "1")Integer pageNumber, 
                                             @RequestParam(value = "Size", required = false, defaultValue = "20")Integer pageSize) {
         try {
             // 默认按 create_time 排序
             Pageable sortedByTime= PageRequest.of(0, 3, Sort.by("createTime").descending());
             var transactionList = transactionService.FindAllTransactionsByPage(sortedByTime);
             
-            return transactionList;
+            return ServiceResponse.success(transactionList);
         } catch (Exception e) {
             log.error("查询失败", e);
             throw new ServiceBaseException("查询失败:" + e.getMessage(), e);
@@ -58,14 +61,14 @@ public class TransactionController {
     }
 
     @GetMapping("/transaction/list/{userId}")
-    public List<TransactionDTO> findAccountById(@PathVariable String userId,
+    public ServiceResponse<List<TransactionDTO>> findAccountById(@PathVariable String userId,
                                                 @RequestParam(value = "PageNo", required = false, defaultValue = "1")Integer pageNumber, 
                                                 @RequestParam(value = "Size", required = false, defaultValue = "20")Integer pageSize) {
         try {
             // 查询既是source_id 又是 dest_id 的交易
             Pageable sortedByTime= PageRequest.of(0, 3, Sort.by("createTime").descending());
             var transactionList = transactionService.FindAllTransactionsByUser(userId, sortedByTime);
-            return transactionList;
+            return ServiceResponse.success(transactionList);
         } catch (Exception e) {
             log.error("查询失败", e);
             throw new ServiceBaseException("查询失败:" + e.getMessage(), e);
@@ -73,7 +76,7 @@ public class TransactionController {
     }
 
     @PostMapping("/transaction/deposit")
-    public TransactionDTO depositMoney(@RequestBody DepositRequest request) {
+    public ServiceResponse<TransactionDTO> depositMoney(@RequestBody DepositRequest request) {
 
         log.info("[depositMoney]Request: {}", JSON.toJSONString(request));
         if (StringUtils.isEmpty(request.getUserId()))
@@ -86,11 +89,11 @@ public class TransactionController {
         }
 
         var transaction = transactionService.MakeDepoit(request.getUserId(), request.getAmount());
-        return transaction;
+        return ServiceResponse.success(transaction);
     }
 
     @PostMapping("/transaction/withdraw")
-    public TransactionDTO withdrawMoney(@RequestBody WithdrawRequest request) {
+    public ServiceResponse<TransactionDTO> withdrawMoney(@RequestBody WithdrawRequest request) {
         
         log.info("[withdrawMoney]Request: {}", JSON.toJSONString(request));
         if (StringUtils.isEmpty(request.getUserId()))
@@ -103,11 +106,11 @@ public class TransactionController {
         }
 
         var transaction = transactionService.MakeWithdraw(request.getUserId(), request.getAmount());
-        return transaction;
+        return ServiceResponse.success(transaction);
     }
 
     @PostMapping("/transaction/transfer")
-    public TransactionDTO transferMoney(@RequestBody TransferRequest request) {
+    public ServiceResponse<TransactionDTO> transferMoney(@RequestBody TransferRequest request) {
         
         log.info("[transferMoney]Request: {}", JSON.toJSONString(request));
         if (StringUtils.isEmpty(request.getSourceUserId()))
@@ -122,8 +125,20 @@ public class TransactionController {
         {
             throw new RequestArgumentException("amount must be greater than 0");
         }
-        
+        var enbaleMessaging = Boolean.parseBoolean(environment.getProperty("application.use_messaging"));
+        if (enbaleMessaging)
+        {
+            log.info("[transferMoney]Sending request to Transfer-Queue");
+            var transactionTime = new Timestamp(Instant.now().toEpochMilli());
+            messageSender.sendTransferMessage(TransferMessage.builder()
+                                            .sourceUserId(request.getSourceUserId())
+                                            .destUserId(request.getDestUserId())
+                                            .amount(request.getAmount())
+                                            .timestamp(transactionTime)
+                                            .build());
+            return ServiceResponse.success(null);
+        }
         var transaction = transactionService.MakeTransfer(request.getSourceUserId(),request.getDestUserId(), request.getAmount());
-        return transaction;
+        return ServiceResponse.success(transaction);
     }
 }

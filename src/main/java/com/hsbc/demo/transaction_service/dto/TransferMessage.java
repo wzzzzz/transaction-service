@@ -1,6 +1,10 @@
 package com.hsbc.demo.transaction_service.dto;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
+
+import lombok.Builder;
+import lombok.Data;
 
 @Data
 @Builder

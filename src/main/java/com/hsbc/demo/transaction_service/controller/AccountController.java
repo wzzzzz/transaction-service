@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.alibaba.fastjson.JSON;
 import com.hsbc.demo.transaction_service.dto.AccountDTO;
+import com.hsbc.demo.transaction_service.dto.ServiceResponse;
 import com.hsbc.demo.transaction_service.exception.RequestArgumentException;
 import com.hsbc.demo.transaction_service.exception.ServiceBaseException;
 import com.hsbc.demo.transaction_service.service.AccountService;
@@ -37,14 +38,14 @@ public class AccountController {
     private AccountService accountService;
 
     @GetMapping("/account")
-    public List<AccountDTO> findAllAccounts(@RequestParam(value = "PageNo", required = false, defaultValue = "1")Integer pageNumber, 
+    public ServiceResponse<List<AccountDTO>> findAllAccounts(@RequestParam(value = "PageNo", required = false, defaultValue = "1")Integer pageNumber, 
                                             @RequestParam(value = "Size", required = false, defaultValue = "20")Integer pageSize) {
         try {
             // 默认按user name 排序
             Pageable sortedByName = PageRequest.of(0, 3, Sort.by("UserName").ascending());
             var accountDTOList = accountService.FindAllAccountsByPage(sortedByName);
             
-            return accountDTOList;
+            return ServiceResponse.success(accountDTOList);
         } catch (Exception e) {
             log.error("查询失败", e);
             throw new ServiceBaseException("查询失败:" + e.getMessage(), e);
@@ -52,19 +53,19 @@ public class AccountController {
     }
 
     @GetMapping("/account/{userId}")
-    public AccountDTO findAccountById(@PathVariable String userId) {
+    public ServiceResponse<AccountDTO> findAccountById(@PathVariable String userId) {
         var accountInfo = accountService.GetAccountById(userId);
-        return accountInfo;
+        return ServiceResponse.success(accountInfo);
     }
 
     @PutMapping("/account/{userId}")
-    public AccountDTO updateAccountById(@PathVariable(name = "userId") String userId, @RequestBody AccountDTO accountInfo) {
+    public ServiceResponse<AccountDTO> updateAccountById(@PathVariable(name = "userId") String userId, @RequestBody AccountDTO accountInfo) {
         var updatedData = accountService.UpdateAccountByUserId(userId, accountInfo);
-        return updatedData;
+        return ServiceResponse.success(updatedData);
     }
 
     @PostMapping("/account/register")
-    public AccountDTO createAccount(@RequestBody AccountDTO accountInfo) {
+    public ServiceResponse<AccountDTO> createAccount(@RequestBody AccountDTO accountInfo) {
         log.info("[createAccount]Request: {}", JSON.toJSONString(accountInfo));
 
         if (StringUtils.isEmpty(accountInfo.getUserName()))
@@ -79,6 +80,6 @@ public class AccountController {
             accountInfo.setUserId("UID" + uuId.substring(0,27 ));
         }
         accountService.RegisterAccount(accountInfo);
-        return accountInfo;
+        return ServiceResponse.success(accountInfo);
     }
 }
