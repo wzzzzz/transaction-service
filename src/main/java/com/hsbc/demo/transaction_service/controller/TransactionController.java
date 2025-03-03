@@ -21,6 +21,7 @@ import com.alibaba.fastjson.JSON;
 import com.hsbc.demo.transaction_service.dto.*;
 import com.hsbc.demo.transaction_service.exception.RequestArgumentException;
 import com.hsbc.demo.transaction_service.exception.ServiceBaseException;
+import com.hsbc.demo.transaction_service.messaging.TransactionMessageSender;
 import com.hsbc.demo.transaction_service.service.TransactionService;
 
 import jakarta.annotation.Resource;
@@ -34,6 +35,12 @@ public class TransactionController {
 
     @Resource
     private TransactionService transactionService;
+
+    @Resource
+    private TransactionMessageSender messageSender;
+    
+    @Resource
+    private Environment environment;
 
     @GetMapping("/transaction/list")
     public List<TransactionDTO> findAllAccounts(@RequestParam(value = "PageNo", required = false, defaultValue = "1")Integer pageNumber, 

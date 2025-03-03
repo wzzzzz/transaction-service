@@ -1,2 +1,211 @@
-# transaction-service
-Mocked Transaction Service
+# Transaction Service
+
+## 1. 整体架构
+
+本项目是一个基于 Spring Boot 的微服务应用，旨在实现用户账户管理和交易处理等核心功能。系统采用分层架构设计，通过K8S集群部署，实现动态扩容从而达到高效的处理，主要包括以下模块：
+
+- **账户模块**：处理用户账户的查询和更新操作。
+- **交易模块**：管理用户的存款、取款和转账等交易操作。
+- **消息队列模块**：通过 RabbitMQ 实现异步消息处理，确保系统的高性能和可扩展性。
+
+下图展示了系统的整体架构：
+![alt text](design-plot.svg)
+
+架构图中展示了各模块之间的交互关系，以及与 MySQL 和 RabbitMQ 等外部组件的集成方式。
+
+## 2. Service 实现
+
+### a. 依赖的组件
+
+- **MySQL**：作为系统数据库，用于存储账户信息和交易记录等关键数据。
+- **RabbitMQ**：作为消息队列中间件，在请求量过大的时候，通过异步处理的形式支持转账等一系列业务，提升系统的响应速度和可扩展性。
+
+### b. 主要接口
+
+以下是系统中主要的 RESTful API 接口及其功能描述：
+
+1. **用户注册**
+
+   - **URL**：`POST http://{service-endpoint}/api/account/register`
+   - **请求体**：
+
+     ```json
+     {
+       "UserName": "example_user",
+       "FirstName": "first_name",
+       "LastName": "last_name"
+     }
+     ```
+
+   - **功能**：创建新用户账户。
+
+2. **查询用户信息**
+
+   - **URL**：`GET http://{service-endpoint}/api/account/{userId}`
+
+   - **功能**：查询全部或指定用户的基本信息以及余额。
+
+3. **存款操作**
+
+   - **URL**：`POST http://{service-endpoint}/api/transaction/deposit`
+   - **请求体**：
+
+     ```json
+     {
+       "UserId": "USER-2DBB8F6D1DA44259B379457B823",
+       "Amount": 20.00
+     }
+     ```
+
+   - **功能**：为指定用户的账户增加余额。
+
+4. **取款操作**
+
+   - **URL**：`POST http://{service-endpoint}/api/transaction/withdraw`
+   - **请求体**：
+
+     ```json
+     {
+       "UserId": "USER-2DBB8F6D1DA44259B379457B823",
+       "Amount": 10.00
+     }
+     ```
+
+   - **功能**：从指定用户的账户中扣减余额。
+
+5. **转账操作**
+
+   - **URL**：`POST http://{service-endpoint}/api/transaction/transfer`
+   - **请求体**：
+
+     ```json
+     {
+       "SourceUserId": "USER-2DBB8F6D1DA44259B379457B823",
+       "DestUserId": "USER-3ACB9F7E2EB54368A480567C934",
+       "Amount": 50.00
+     }
+     ```
+
+   - **功能**：在两个用户的账户之间进行余额转移。
+
+### c. 动态扩容与配置方案
+
+为确保系统的高可用性和可扩展性，提供以下两种方案：
+
+1. **Kubernetes 动态扩容**
+
+   通过将应用部署在 Kubernetes（K8S）集群上，利用其自动伸缩功能，根据系统负载情况自动调整服务实例数量，确保在高并发场景下的稳定性。
+
+2. **RabbitMQ 异步处理**
+
+   利用 RabbitMQ 的消息队列机制，将耗时的操作（如转账交易）以异步方式执行，减少系统的响应时间，提高吞吐量。
+
+## 3. 服务的部署与配置
+
+1. **环境准备**
+
+   - 安装并配置 Docker，用于容器化应用。
+   - 安装并配置 Kubernetes 集群，确保集群正常运行。
+   - 确保已安装并配置 MySQL 和 RabbitMQ 服务。
+
+2. **构建 Docker 镜像**
+
+   - 在项目根目录下，创建一个名为 `Dockerfile` 的文件，内容如下：
+
+     ```dockerfile
+     FROM openjdk:11-jre-slim
+     VOLUME /tmp
+     COPY target/your-app-name.jar app.jar
+     ENTRYPOINT ["java", "-jar", "/app.jar"]
+     ```
+
+   - 使用以下命令构建 Docker 镜像：
+
+     ```bash
+     docker build -t your-app-name:latest .
+     ```
+
+3. **推送镜像到镜像仓库**
+
+   - 将构建的镜像推送到 Docker Hub 或私有镜像仓库：
+
+     ```bash
+     docker tag your-app-name:latest your-repo/your-app-name:latest
+     docker push your-repo/your-app-name:latest
+     ```
+
+4. **编写 Kubernetes 部署配置文件**
+
+   - 创建一个名为 `deployment.yaml` 的文件，内容如下：
+
+     ```yaml
+     apiVersion: apps/v1
+     kind: Deployment
+     metadata:
+       name: your-app-deployment
+     spec:
+       replicas: 3
+       selector:
+         matchLabels:
+           app: your-app
+       template:
+         metadata:
+           labels:
+             app: your-app
+         spec:
+           containers:
+           - name: your-app-container
+             image: your-repo/your-app-name:latest
+             ports:
+             - containerPort: 8080
+     ```
+
+   - 创建一个名为 `service.yaml` 的文件，内容如下：
+
+     ```yaml
+     apiVersion: v1
+     kind: Service
+     metadata:
+       name: your-app-service
+     spec:
+       selector:
+         app: your-app
+       ports:
+         - protocol: TCP
+           port: 80
+           targetPort: 8080
+       type: LoadBalancer
+     ```
+
+5. **使用 kubectl 部署应用**
+
+   - 在 Kubernetes 集群中，使用 `kubectl` 部署应用：
+
+     ```bash
+     kubectl apply -f deployment.yaml
+     kubectl apply -f service.yaml
+     ```
+
+6. **配置 MySQL 和 RabbitMQ**
+
+   - 在应用的配置文件中，设置 MySQL 和 RabbitMQ 的连接信息，确保应用能够正常连接并使用这些服务。
+
+## 4. To Do List
+
+- **部署上线之后对系统进行压测**
+
+  对系统进行压测并记录数据，以便后续配置动态扩容。
+
+- **集成JUnit单元测试**
+
+  集成单元测试，保证每次上线功能不受影响，业务保证一致性。
+
+- **完善日志记录功能**
+
+  集成日志框架，如Kafka，ElasticSearch-Kibana等，记录系统运行情况和错误信息，以便后续分析处理
+
+- **集成服务指标上报以及服务预警响应**
+
+  集成Prometheus，使部署在K8S上的deployment进行指标上报，并集成Grafana形成看板，在服务受到影响以及不可用时能及时收到相关预警并快速响应。
+::contentReference[oaicite:0]{index=0}
+ 
