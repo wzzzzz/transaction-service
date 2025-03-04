@@ -9,10 +9,10 @@
         <version>3.4.3</version>
     </parent>
     <groupId>com.hsbc.demo</groupId>
-    <artifactId>transaction-service</artifactId>
+    <artifactId>transaction-web</artifactId>
     <version>1.0.0</version>
-    <name>transaction-service</name>
-    <description>HSBC Trasaction WebService Demo</description>
+    <name>transaction-web</name>
+    <description>HSBC Trasaction Web Demo</description>
     <properties>
         <java.version>17</java.version>
     </properties>

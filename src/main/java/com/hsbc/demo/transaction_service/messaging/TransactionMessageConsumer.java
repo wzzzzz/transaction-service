@@ -35,19 +35,15 @@ public class TransactionMessageConsumer {
         int retryCount = 0;
         while (retryCount < MAX_RETRIES) {
             try {
-                // // 模拟业务逻辑失败
-                // if (message.getContent().contains("error")) {
-                //     throw new RuntimeException("Message processing failed!");
-                // }
-                // 正常处理逻辑
-                System.out.println("Message processed successfully: " + message);
-                break; // 处理成功，退出循环
+                log.info("Message processed successfully: " + message);
+                MakeTransfer(message.getSourceUserId(), message.getDestUserId(), message.getAmount(), message.getTimestamp());
+                break;
             } catch (Exception e) {
                 retryCount++;
-                System.out.println("Retry attempt " + retryCount + " for message: " + message);
+                log.warn("Retry attempt " + retryCount + " for message: " + message);
                 if (retryCount == MAX_RETRIES) {
-                    System.out.println("Max retries reached, sending to DLX: " + message);
-                    // 将消息发送到死信队列
+                    log.info("Max retries reached, sending to DLX: " + message);
+                    // To do: 将消息发送到Dead letter
                     throw e;
                 }
             }

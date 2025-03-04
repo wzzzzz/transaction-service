@@ -2,7 +2,7 @@
 
 ## 1. 整体架构
 
-本项目是一个基于 Spring Boot 的微服务应用，旨在实现用户账户管理和交易处理等核心功能。系统采用分层架构设计，通过K8S集群部署，实现动态扩容从而达到高效的处理，主要包括以下模块：
+本项目是一个基于 Spring Boot 的微服务应用，旨在实现用户账户管理和交易处理等核心功能。系统采用分层架构设计，通过 K8S 集群部署，实现动态扩容从而达到高效的处理，主要包括以下模块：
 
 - **账户模块**：处理用户账户的查询和更新操作。
 - **交易模块**：管理用户的存款、取款和转账等交易操作。
@@ -53,7 +53,7 @@
      ```json
      {
        "UserId": "USER-2DBB8F6D1DA44259B379457B823",
-       "Amount": 20.00
+       "Amount": 20.0
      }
      ```
 
@@ -67,7 +67,7 @@
      ```json
      {
        "UserId": "USER-2DBB8F6D1DA44259B379457B823",
-       "Amount": 10.00
+       "Amount": 10.0
      }
      ```
 
@@ -82,7 +82,7 @@
      {
        "SourceUserId": "USER-2DBB8F6D1DA44259B379457B823",
        "DestUserId": "USER-3ACB9F7E2EB54368A480567C934",
-       "Amount": 50.00
+       "Amount": 50.0
      }
      ```
 
@@ -106,110 +106,46 @@
 
    - 安装并配置 Docker，用于容器化应用。
    - 安装并配置 Kubernetes 集群，确保集群正常运行。
-   - 确保已安装并配置 MySQL 和 RabbitMQ 服务。
+   - 确保已配置 MySQL 和 RabbitMQ 服务。
+   - 以 AWS 为例，需要创建 AWS EKS 集群，AWS ECR 仓库，已经 AWS 提供的 RDS-MySql 和 AWS Amazon MQ
 
-2. **构建 Docker 镜像**
+2. **输入相关配置**
 
-   - 在项目根目录下，创建一个名为 `Dockerfile` 的文件，内容如下：
+   - 确保已经登入并配置 aws cli 已经 kubectl
 
-     ```dockerfile
-     FROM openjdk:11-jre-slim
-     VOLUME /tmp
-     COPY target/your-app-name.jar app.jar
-     ENTRYPOINT ["java", "-jar", "/app.jar"]
-     ```
+   - 在文件 ./main/resources/application-prod.properties 中填入已配置好的 MySql 和 RabbitMQ 的域名、端口、登录信息
 
-   - 使用以下命令构建 Docker 镜像：
+   - 在文件 ./deploy.sh 中填入相关的 aws 用户信息
 
-     ```bash
-     docker build -t your-app-name:latest .
-     ```
+3. **运行部署脚本**
 
-3. **推送镜像到镜像仓库**
-
-   - 将构建的镜像推送到 Docker Hub 或私有镜像仓库：
+   - 在项目根目录运行相关脚本并观察输出：
 
      ```bash
-     docker tag your-app-name:latest your-repo/your-app-name:latest
-     docker push your-repo/your-app-name:latest
+     sh ./deploy.sh
      ```
 
-4. **编写 Kubernetes 部署配置文件**
-
-   - 创建一个名为 `deployment.yaml` 的文件，内容如下：
-
-     ```yaml
-     apiVersion: apps/v1
-     kind: Deployment
-     metadata:
-       name: your-app-deployment
-     spec:
-       replicas: 3
-       selector:
-         matchLabels:
-           app: your-app
-       template:
-         metadata:
-           labels:
-             app: your-app
-         spec:
-           containers:
-           - name: your-app-container
-             image: your-repo/your-app-name:latest
-             ports:
-             - containerPort: 8080
-     ```
-
-   - 创建一个名为 `service.yaml` 的文件，内容如下：
-
-     ```yaml
-     apiVersion: v1
-     kind: Service
-     metadata:
-       name: your-app-service
-     spec:
-       selector:
-         app: your-app
-       ports:
-         - protocol: TCP
-           port: 80
-           targetPort: 8080
-       type: LoadBalancer
-     ```
-
-5. **使用 kubectl 部署应用**
-
-   - 在 Kubernetes 集群中，使用 `kubectl` 部署应用：
-
-     ```bash
-     kubectl apply -f deployment.yaml
-     kubectl apply -f service.yaml
-     ```
-
-6. **配置 MySQL 和 RabbitMQ**
-
-   - 在应用的配置文件中，设置 MySQL 和 RabbitMQ 的连接信息，确保应用能够正常连接并使用这些服务。
+4. **通过 Postman 进行接口测试**
 
 ## 4. To Do List
 
-- **集成ExceptionHandler**
+- **集成 ExceptionHandler**
 
-  由于时间所限，需要集成ExceptionHandler，使请求处理出错时返回规范的Response
+  由于时间所限，需要集成 ExceptionHandler，使请求处理出错时返回规范的 Response
 
 - **部署上线之后对系统进行压测**
 
   对系统进行压测并记录数据，以便后续配置动态扩容。
 
-- **集成JUnit单元测试**
+- **集成 JUnit 单元测试**
 
   集成单元测试，保证每次上线功能不受影响，业务保证一致性。
 
 - **完善日志记录功能**
 
-  集成日志框架，如Kafka，ElasticSearch-Kibana等，记录系统运行情况和错误信息，以便后续分析处理
+  集成日志框架，如 Kafka，ElasticSearch-Kibana 等，记录系统运行情况和错误信息，以便后续分析处理
 
 - **集成服务指标上报以及服务预警响应**
 
-  集成Prometheus，使部署在K8S上的deployment进行指标上报，并集成Grafana形成看板，在服务受到影响以及不可用时能及时收到相关预警并快速响应。
-::contentReference[oaicite:0]{index=0}
- 
+  集成 Prometheus，使部署在 K8S 上的 deployment 进行指标上报，并集成 Grafana 形成看板，在服务受到影响以及不可用时能及时收到相关预警并快速响应。
+  ::contentReference[oaicite:0]{index=0}
