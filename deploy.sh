@@ -36,19 +36,6 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# 5. 创建K8s Secret用于ECR认证
-echo "Creating Kubernetes secret for AWS ECR..."
-kubectl create secret docker-registry regcred \
-  --docker-server=aws_account_id.dkr.ecr.$AWS_REGION.amazonaws.com \
-  --docker-username=AWS \
-  --docker-password=$(aws ecr get-login-password --region $AWS_REGION) \
-  --docker-email=your-email@example.com --namespace $K8S_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-
-if [ $? -ne 0 ]; then
-  echo "Kubernetes secret creation failed, exiting."
-  exit 1
-fi
-
 # Deloy AWS deployment & service & auto-scaling
 echo "Deploy AWS ECS Cluster..."
 kubectl apply -f ./deployments/

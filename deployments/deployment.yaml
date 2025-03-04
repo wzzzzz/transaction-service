@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: test-deployment
+  namespace: default
   name: transaction-web-app
   labels:
     app: transaction-web-app
@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: transaction-web
-          image: aws_account_id.dkr.ecr.region.amazonaws.com/your-repo-name:latest
+          image: 864981757274.dkr.ecr.ap-east-1.amazonaws.com/test/transaction-web:latest
           ports:
             - containerPort: 8080
 
@@ -30,14 +30,15 @@ spec:
               cpu: "1"
               memory: "2Gi"
 
-      imagePullSecrets:
-        - name: regcred # 需要提前创建 AWS ECR的访问凭证
+      # imagePullSecrets:
+      #   - name: regcred # 需要提前创建 AWS ECR的访问凭证
 
 ---
 apiVersion: apps/v1
 kind: HorizontalPodAutoscaler
 metadata:
   name: transaction-web-app-hpa
+  namespace: default
 spec:
   scaleTargetRef:
     apiVersion: apps/v1

@@ -16,6 +16,9 @@ import com.hsbc.demo.transaction_service.entity.*;
 import com.hsbc.demo.transaction_service.exception.*;
 import com.hsbc.demo.transaction_service.repository.*;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class TransactionMessageConsumer {
 

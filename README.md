@@ -124,7 +124,9 @@
      ```bash
      sh ./deploy.sh
      ```
-
+  - 运行成功后会有对应的service和deployment，如图
+  ![alt text](deploy-success.png)
+  
 4. **通过 Postman 进行接口测试**
 
 ## 4. To Do List
